@@ -148,8 +148,8 @@ end
 -- element background lightens while hovered; returns a table whose .On says if it's hovered
 local function hoverable(btn, f)
     local st = {On = false}
-    btn.MouseEnter:Connect(function() st.On = true; tw(f, 0.15, {BackgroundColor3 = Theme.Hover}) end)
-    btn.MouseLeave:Connect(function() st.On = false; tw(f, 0.15, {BackgroundColor3 = Theme.Element}) end)
+    btn.MouseEnter:Connect(function() st.On = true; tw(f, 0.12, {BackgroundTransparency = 0}) end)
+    btn.MouseLeave:Connect(function() st.On = false; tw(f, 0.12, {BackgroundTransparency = 1}) end)
     return st
 end
 
@@ -174,26 +174,6 @@ local function getParent()
         if canWrite then return ui end
     end
     return Players.LocalPlayer:WaitForChild("PlayerGui")
-end
-
-local function makeLogo(parent, pos, size)
-    local badge = new("Frame", {Position = pos, Size = UDim2.fromOffset(size, size), BackgroundColor3 = Theme.Element, BorderSizePixel = 0, Parent = parent})
-    corner(badge, 5)
-    stroke(badge, Color3.fromRGB(72, 72, 88))
-    new("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(38, 38, 46), Color3.fromRGB(22, 22, 28)), Rotation = 90, Parent = badge})
-    local p = new("TextLabel", {
-        BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Text = "P", FontFace = Fonts.Bold,
-        TextSize = math.floor(size * 0.64), TextColor3 = Color3.new(1, 1, 1), Parent = badge,
-    })
-    new("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(176, 182, 200)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(246, 247, 251)),
-        }),
-        Rotation = 60, Parent = p,
-    })
-    return badge
 end
 
 -- config value <-> JSON-safe value
@@ -530,20 +510,13 @@ function Library:CreateWindow(cfg)
     new("Frame", {Position = UDim2.new(1, -16, 0, 0), Size = UDim2.new(0, 16, 1, 0), BackgroundColor3 = Theme.Sidebar, BorderSizePixel = 0, Parent = sidebar})
     new("Frame", {Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = sidebar})
 
-    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Active = true, Parent = sidebar})
-    makeLogo(header, UDim2.fromOffset(14, 12), 28)
-    local t1, t2 = string.match(title, "^(%S+)%s*(.*)$")
-    local ttl = label(header, t1 or title, 16, Theme.Text, Fonts.Bold)
-    ttl.Position = UDim2.fromOffset(50, 9)
-    ttl.Size = UDim2.new(1, -56, 0, 18)
-    if t2 and t2 ~= "" then
-        local sub2 = label(header, string.upper(t2), 10, Theme.SubText, Fonts.Bold)
-        sub2.Position = UDim2.fromOffset(50, 26)
-        sub2.Size = UDim2.new(1, -56, 0, 12)
-    end
+    local header = new("Frame", {Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, Active = true, Parent = sidebar})
+    local ttl = label(header, title, 15, Theme.Text, Fonts.Bold)
+    ttl.Position = UDim2.fromOffset(14, 0)
+    ttl.Size = UDim2.new(1, -24, 1, 0)
 
     local tabList = new("ScrollingFrame", {
-        Position = UDim2.fromOffset(0, 56), Size = UDim2.new(1, 0, 1, -112),
+        Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 1, -104),
         BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 0,
         CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = sidebar,
     })
@@ -583,7 +556,7 @@ function Library:CreateWindow(cfg)
         end
         local any = showName or showAvatar
         footer.Visible = any
-        tabList.Size = UDim2.new(1, 0, 1, any and -112 or -56)
+        tabList.Size = UDim2.new(1, 0, 1, any and -104 or -48)
     end
     renderIdentity()
     function Window:SetShowName(v)
@@ -622,7 +595,6 @@ function Library:CreateWindow(cfg)
             t.Holder.Visible = on
             tw(t.Label, 0.2, {TextColor3 = on and Theme.Text or Theme.SubText})
             tw(t.Button, 0.2, {BackgroundTransparency = on and 0 or 1})
-            tw(t.Bar, 0.25, {BackgroundTransparency = on and 0 or 1, Size = on and UDim2.fromOffset(3, 18) or UDim2.fromOffset(3, 0)})
         end
         tab.Holder.Position = UDim2.fromOffset(0, 46)
         tw(tab.Holder, 0.25, {Position = UDim2.fromOffset(0, 38)})
@@ -640,14 +612,9 @@ function Library:CreateWindow(cfg)
             Text = "", AutoButtonColor = false, LayoutOrder = bottom and 100000 or (#Window.Tabs + 1), Parent = tabList,
         })
         corner(btn, 4)
-        local bar = new("Frame", {
-            AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0),
-            Size = UDim2.fromOffset(3, 0), BackgroundColor3 = accent, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = btn,
-        })
-        corner(bar, 2)
         local lbl = label(btn, name, 13, Theme.SubText)
-        lbl.Position = UDim2.fromOffset(14, 0)
-        lbl.Size = UDim2.new(1, -14, 1, 0)
+        lbl.Position = UDim2.fromOffset(12, 0)
+        lbl.Size = UDim2.new(1, -12, 1, 0)
 
         btn.MouseEnter:Connect(function()
             if currentTab ~= Tab then tw(btn, 0.15, {BackgroundTransparency = 0.5}) end
@@ -666,7 +633,7 @@ function Library:CreateWindow(cfg)
 
         local holder = new("Frame", {Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 1, -38), BackgroundTransparency = 1, ClipsDescendants = true, Visible = false, Parent = right})
 
-        Tab.Button, Tab.Label, Tab.Bar, Tab.SubBar, Tab.Holder = btn, lbl, bar, subBar, holder
+        Tab.Button, Tab.Label, Tab.SubBar, Tab.Holder = btn, lbl, subBar, holder
         table.insert(Window.Tabs, Tab)
         btn.MouseButton1Click:Connect(function() selectTab(Tab) end)
 
@@ -733,9 +700,8 @@ function Library:CreateWindow(cfg)
             end
 
             local function base(height)
-                local f = new("Frame", {Size = UDim2.new(1, 0, 0, height), BackgroundColor3 = Theme.Element, BorderSizePixel = 0, LayoutOrder = nextOrder(), Parent = currentContainer})
-                corner(f, 4)
-                stroke(f)
+                local f = new("Frame", {Size = UDim2.new(1, 0, 0, height), BackgroundColor3 = Theme.Hover, BackgroundTransparency = 1, BorderSizePixel = 0, LayoutOrder = nextOrder(), Parent = currentContainer})
+                corner(f, 3)
                 return f
             end
 
@@ -747,37 +713,41 @@ function Library:CreateWindow(cfg)
                 if type(o) ~= "table" then o = {Collapsed = o == true} end
                 local maxH = o.MaxHeight or 190
 
-                local sHead = new("TextButton", {Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, LayoutOrder = nextOrder(), Parent = page})
-                local l = label(sHead, string.upper(text), 11, Theme.SubText, Fonts.Bold)
-                l.Size = UDim2.new(1, -24, 1, 0)
-                local arrow = label(sHead, "v", 12, Theme.SubText, Fonts.Bold, Enum.TextXAlignment.Center)
-                arrow.AnchorPoint = Vector2.new(1, 0.5)
-                arrow.Position = UDim2.new(1, -2, 0.5, 0)
-                arrow.Size = UDim2.fromOffset(18, 18)
+                local sHead = new("TextButton", {Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, LayoutOrder = nextOrder(), Parent = page})
+                local l = label(sHead, text, 12, Theme.SubText, Fonts.Medium)
+                l.Position = UDim2.fromOffset(2, 0)
+                l.Size = UDim2.new(1, -24, 1, -2)
+                l.TextYAlignment = Enum.TextYAlignment.Bottom
+                local arrow = label(sHead, "-", 13, Theme.SubText, Fonts.Medium, Enum.TextXAlignment.Right)
+                arrow.Position = UDim2.fromOffset(0, 0)
+                arrow.Size = UDim2.new(1, -4, 1, -2)
+                arrow.TextYAlignment = Enum.TextYAlignment.Bottom
 
                 local container = new("ScrollingFrame", {
-                    Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
-                    ScrollBarThickness = 3, ScrollBarImageColor3 = Color3.fromRGB(70, 70, 86),
+                    Size = UDim2.new(1, 0, 0, 0), BackgroundColor3 = Theme.Element, BorderSizePixel = 0,
+                    ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Stroke,
                     ScrollingDirection = Enum.ScrollingDirection.Y, CanvasSize = UDim2.new(),
                     AutomaticCanvasSize = Enum.AutomaticSize.Y, ClipsDescendants = true, LayoutOrder = nextOrder(), Parent = page,
                 })
-                local layout = new("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = container})
-                local cpad = new("UIPadding", {PaddingTop = UDim.new(0, 1), PaddingBottom = UDim.new(0, 1), PaddingLeft = UDim.new(0, 1), Parent = container})
+                corner(container, 4)
+                stroke(container)
+                local layout = new("UIListLayout", {Padding = UDim.new(0, 1), SortOrder = Enum.SortOrder.LayoutOrder, Parent = container})
+                local cpad = pad(container, 4, 4, 4, 4)
                 currentContainer = container
 
                 local open = not o.Collapsed
                 local busy = false
                 if not open then
                     container.Visible = false
-                    arrow.Rotation = -90
+                    arrow.Text = "+"
                 end
 
                 local function fitHeight()
-                    return math.min(layout.AbsoluteContentSize.Y + 2, maxH)
+                    return math.min(layout.AbsoluteContentSize.Y + 8, maxH)
                 end
                 local function refit()
                     if not open or busy then return end
-                    cpad.PaddingRight = UDim.new(0, (layout.AbsoluteContentSize.Y + 2 > maxH) and 8 or 1)
+                    cpad.PaddingRight = UDim.new(0, (layout.AbsoluteContentSize.Y + 8 > maxH) and 10 or 4)
                     container.Size = UDim2.new(1, 0, 0, fitHeight())
                 end
                 layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(refit)
@@ -789,7 +759,7 @@ function Library:CreateWindow(cfg)
                     if busy then return end
                     busy = true
                     open = not open
-                    tw(arrow, 0.2, {Rotation = open and 0 or -90})
+                    arrow.Text = open and "-" or "+"
                     if open then
                         container.Visible = true
                         container.Size = UDim2.new(1, 0, 0, 0)
@@ -809,7 +779,7 @@ function Library:CreateWindow(cfg)
             function Sub:Label(text)
                 local f = base(0)
                 f.AutomaticSize = Enum.AutomaticSize.Y
-                pad(f, 12, 8, 12, 8)
+                pad(f, 8, 7, 8, 7)
                 local l = label(f, text, 13, Theme.SubText)
                 l.Size = UDim2.new(1, 0, 0, 14)
                 l.AutomaticSize = Enum.AutomaticSize.Y
@@ -819,17 +789,21 @@ function Library:CreateWindow(cfg)
             end
 
             function Sub:Button(opt)
-                local f = base(32)
-                local b = new("TextButton", {Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", Parent = f})
-                local l = label(b, opt.Name or "Button", 13)
-                l.Position = UDim2.fromOffset(12, 0)
-                l.Size = UDim2.new(1, -80, 1, 0)
-                local arrow = label(b, ">", 13, accent, Fonts.Bold, Enum.TextXAlignment.Right)
-                arrow.Size = UDim2.new(1, -12, 1, 0)
-                local hov = hoverable(b, f)
+                local f = base(34)
+                local b = new("TextButton", {
+                    Position = UDim2.fromOffset(4, 4), Size = UDim2.new(1, (opt.Keybind ~= nil) and -58 or -8, 1, -8),
+                    BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Text = "", AutoButtonColor = false, Parent = f,
+                })
+                corner(b, 3)
+                local bs = stroke(b)
+                local l = label(b, opt.Name or "Button", 13, Theme.Text, Fonts.Medium, Enum.TextXAlignment.Center)
+                l.Position = UDim2.fromOffset(6, 0)
+                l.Size = UDim2.new(1, -12, 1, 0)
+                b.MouseEnter:Connect(function() tw(b, 0.12, {BackgroundColor3 = Theme.Hover}) end)
+                b.MouseLeave:Connect(function() tw(b, 0.12, {BackgroundColor3 = Theme.Background}) end)
                 local function fire()
-                    tw(f, 0.08, {BackgroundColor3 = accent})
-                    task.delay(0.1, function() tw(f, 0.25, {BackgroundColor3 = hov.On and Theme.Hover or Theme.Element}) end)
+                    bs.Color = accent
+                    tw(bs, 0.35, {Color = Theme.Stroke})
                     if opt.Callback then task.spawn(opt.Callback) end
                 end
                 b.MouseButton1Click:Connect(fire)
@@ -839,7 +813,7 @@ function Library:CreateWindow(cfg)
                     bind = newBind(typeof(opt.Keybind) == "EnumItem" and opt.Keybind or nil, fire, "Press", opt.Name or "Button")
                     local chip
                     chip, api = makeChip(f, bind, opt.KeybindChanged)
-                    chip.Position = UDim2.new(1, -34, 0.5, 0)
+                    chip.Position = UDim2.new(1, -6, 0.5, 0)
                     if opt.Flag then register({Flag = opt.Flag .. "_Key"}, api, "Keybind") end
                 end
 
@@ -1007,17 +981,15 @@ function Library:CreateWindow(cfg)
                 f.ClipsDescendants = true
 
                 local head = new("TextButton", {Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Text = "", Parent = f})
-                hoverable(head, f)
+                head.BackgroundColor3 = Theme.Hover
+                corner(head, 3)
+                hoverable(head, head)
                 local l = label(head, opt.Name or "Dropdown", 13)
                 l.Position = UDim2.fromOffset(12, 0)
                 l.Size = UDim2.new(0.5, -12, 1, 0)
                 local sel = label(head, "", 13, accent, Fonts.Medium, Enum.TextXAlignment.Right)
                 sel.Position = UDim2.new(0.5, 0, 0, 0)
-                sel.Size = UDim2.new(0.5, -28, 1, 0)
-                local arrow = label(head, "v", 12, Theme.SubText, Fonts.Bold, Enum.TextXAlignment.Center)
-                arrow.AnchorPoint = Vector2.new(1, 0.5)
-                arrow.Position = UDim2.new(1, -8, 0.5, 0)
-                arrow.Size = UDim2.fromOffset(14, 14)
+                sel.Size = UDim2.new(0.5, -12, 1, 0)
 
                 local list = new("ScrollingFrame", {
                     Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0,
@@ -1063,7 +1035,6 @@ function Library:CreateWindow(cfg)
                         -- hide the closed list so its rows aren't laid out or hit-tested
                         if id == animId and not open then list.Visible = false end
                     end)
-                    tw(arrow, 0.25, {Rotation = open and 180 or 0})
                 end
                 local function fire()
                     if opt.Callback then task.spawn(opt.Callback, value()) end
@@ -1141,7 +1112,9 @@ function Library:CreateWindow(cfg)
                 f.ClipsDescendants = true
 
                 local head = new("TextButton", {Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Parent = f})
-                hoverable(head, f)
+                head.BackgroundColor3 = Theme.Hover
+                corner(head, 3)
+                hoverable(head, head)
                 local l = label(head, opt.Name or "Color", 13)
                 l.Position = UDim2.fromOffset(12, 0)
                 l.Size = UDim2.new(1, -130, 1, 0)
@@ -1786,8 +1759,11 @@ function Library:CreateWindow(cfg)
     -----------------------------------------------------------------
     local touchBtn
     if UIS.TouchEnabled then
-        touchBtn = makeLogo(gui, UDim2.new(0, 16, 0.5, -22), 44)
-        touchBtn.Visible = false
+        touchBtn = new("Frame", {Position = UDim2.new(0, 16, 0.5, -22), Size = UDim2.fromOffset(44, 44), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Visible = false, Parent = gui})
+        corner(touchBtn, 6)
+        stroke(touchBtn)
+        local initial = label(touchBtn, string.sub(title, 1, 1), 18, Theme.Text, Fonts.Bold, Enum.TextXAlignment.Center)
+        initial.Size = UDim2.fromScale(1, 1)
         -- transparent hit area on top of the logo so the label doesn't swallow touches
         local hit = new("TextButton", {Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5, Parent = touchBtn})
         hit.InputBegan:Connect(function(i)
@@ -1839,10 +1815,9 @@ function Library:CreateWindow(cfg)
     rescale()
     connect(gui:GetPropertyChangedSignal("AbsoluteSize"), rescale)
 
-    makeLogo(splash, UDim2.fromOffset(24, 20), 30)
-    local sTitle = label(splash, title, 24, Theme.Text, Fonts.Bold)
-    sTitle.Position = UDim2.fromOffset(64, 18)
-    sTitle.Size = UDim2.new(1, -76, 0, 34)
+    local sTitle = label(splash, title, 22, Theme.Text, Fonts.Bold)
+    sTitle.Position = UDim2.fromOffset(24, 18)
+    sTitle.Size = UDim2.new(1, -48, 0, 34)
     local sSub = label(splash, cfg.Subtitle or "Loading...", 12, Theme.SubText, Fonts.Regular)
     if not cfg.Subtitle then
         -- game name needs a web request, so fetch it in the background and swap the text in
@@ -1890,7 +1865,7 @@ function Library:CreateWindow(cfg)
         end
         local hint
         if touchBtn then
-            hint = "Tap the P button to hide or show the menu."
+            hint = "Tap the menu button to hide or show the menu."
         else
             hint = "Press " .. keyName(menuBind.Key) .. " to hide or show the menu."
         end
