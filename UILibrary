@@ -15,7 +15,6 @@ local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
-local TextService = game:GetService("TextService")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 
@@ -33,15 +32,44 @@ local Theme = {
     Accent     = Color3.fromRGB(124, 92, 255),
 }
 
--- Builder Sans: clean, slightly narrower than Gotham, renders sharp at small sizes.
--- Swap these three to change the font everywhere.
+-- Text uses FontFace (Font objects) so custom fonts can be loaded.
+-- Coolvetica is downloaded once from the repo and loaded with getcustomasset;
+-- if the executor can't do that, Builder Sans is used instead.
+local DEFAULT_FONT_URL = "https://raw.githubusercontent.com/stgcent-dotcom/practicalscriptss/main/coolvetica.ttf"
+local BUILDER = "rbxasset://fonts/families/BuilderSans.json"
 local Fonts = {
-    Regular = Enum.Font.BuilderSans,
-    Medium  = Enum.Font.BuilderSansMedium,
-    Bold    = Enum.Font.BuilderSansBold,
+    Regular = Font.new(BUILDER, Enum.FontWeight.Regular),
+    Medium  = Font.new(BUILDER, Enum.FontWeight.Medium),
+    Bold    = Font.new(BUILDER, Enum.FontWeight.Bold),
 }
--- Builder Sans runs a little smaller than Gotham, so labels get +1px
+-- labels get +1px over the size they're given
 local FONT_BUMP = 1
+
+-- Downloads a .ttf (cached in the executor workspace) and turns it into a Font.
+-- Returns nil if anything is missing so the caller can keep the fallback.
+local function loadCustomFont(url, name, folder)
+    if not (getcustomasset and writefile and readfile and isfile and isfolder and makefolder) then return nil end
+    local ok, face = pcall(function()
+        local dir = folder .. "/fonts"
+        if not isfolder(folder) then makefolder(folder) end
+        if not isfolder(dir) then makefolder(dir) end
+        local ttf = dir .. "/" .. name .. ".ttf"
+        if not isfile(ttf) then
+            local data = game:HttpGet(url)
+            -- a missing file comes back as a short "404: Not Found" page
+            if type(data) ~= "string" or #data < 5000 then error("font download failed") end
+            writefile(ttf, data)
+        end
+        local family = dir .. "/" .. name .. ".json"
+        writefile(family, game:GetService("HttpService"):JSONEncode({
+            name = name,
+            faces = {{name = "Regular", weight = 400, style = "normal", assetId = getcustomasset(ttf)}},
+        }))
+        return Font.new(getcustomasset(family), Enum.FontWeight.Regular)
+    end)
+    if ok then return face end
+    return nil
+end
 
 local WIN_W, WIN_H = 600, 390
 
@@ -103,7 +131,7 @@ local function label(parent, text, size, color, font, align)
         Text = text,
         TextSize = (size or 13) + FONT_BUMP,
         TextColor3 = color or Theme.Text,
-        Font = font or Fonts.Medium,
+        FontFace = font or Fonts.Medium,
         TextXAlignment = align or Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         Parent = parent,
@@ -154,7 +182,7 @@ local function makeLogo(parent, pos, size)
     stroke(badge, Color3.fromRGB(72, 72, 88))
     new("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(38, 38, 46), Color3.fromRGB(22, 22, 28)), Rotation = 90, Parent = badge})
     local p = new("TextLabel", {
-        BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Text = "P", Font = Fonts.Bold,
+        BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Text = "P", FontFace = Fonts.Bold,
         TextSize = math.floor(size * 0.64), TextColor3 = Color3.new(1, 1, 1), Parent = badge,
     })
     new("UIGradient", {
@@ -203,6 +231,16 @@ function Library:CreateWindow(cfg)
     local startClock = os.clock()
     local toggleKey = cfg.ToggleKey or Enum.KeyCode.RightShift
     local folder = cfg.ConfigFolder or "PracticalScripts"
+
+    -- Font = false keeps Builder Sans; FontUrl points at a different .ttf
+    if cfg.Font ~= false then
+        local url = cfg.FontUrl or DEFAULT_FONT_URL
+        local name = cfg.FontName or "Coolvetica"
+        local face = loadCustomFont(url, name, folder)
+        if face then
+            Fonts.Regular, Fonts.Medium, Fonts.Bold = face, face, face
+        end
+    end
     local lp = Players.LocalPlayer
 
     -- clean old instance (also disconnects its listeners)
@@ -395,7 +433,7 @@ function Library:CreateWindow(cfg)
             AnchorPoint = Vector2.new(1, 0.5), Size = UDim2.fromOffset(0, 20), AutomaticSize = Enum.AutomaticSize.X,
             BackgroundColor3 = Theme.Background, BorderSizePixel = 0, AutoButtonColor = false,
             Text = keyName(bind.Key), TextColor3 = bind.Key and Theme.Text or Theme.SubText,
-            Font = Fonts.Medium, TextSize = 11, ZIndex = 3, Parent = parent,
+            FontFace = Fonts.Medium, TextSize = 11, ZIndex = 3, Parent = parent,
         })
         corner(chip, 3)
         local cs = stroke(chip)
@@ -653,14 +691,16 @@ function Library:CreateWindow(cfg)
         function Tab:SubTab(subName)
             local Sub = {}
 
-            local w = TextService:GetTextSize(subName, 13 + FONT_BUMP, Fonts.Medium, Vector2.new(1000, 100)).X + 24
             local sbtn = new("TextButton", {
-                Size = UDim2.fromOffset(w, 28), BackgroundColor3 = Theme.Element, BackgroundTransparency = 1,
+                Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = Theme.Element, BackgroundTransparency = 1,
                 Text = "", AutoButtonColor = false, LayoutOrder = #Tab.Subs + 1, Parent = subBar,
             })
             corner(sbtn, 4)
+            pad(sbtn, 12, 0, 12, 0)
             local slbl = label(sbtn, subName, 13, Theme.SubText, Fonts.Medium, Enum.TextXAlignment.Center)
-            slbl.Size = UDim2.fromScale(1, 1)
+            slbl.Size = UDim2.fromScale(0, 1)
+            slbl.AutomaticSize = Enum.AutomaticSize.X
+            slbl.TextTruncate = Enum.TextTruncate.None
             sbtn.MouseEnter:Connect(function()
                 if currentSub ~= Sub then tw(sbtn, 0.15, {BackgroundTransparency = 0.5}) end
             end)
@@ -900,7 +940,7 @@ function Library:CreateWindow(cfg)
                 local vl = new("TextBox", {
                     AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 6), Size = UDim2.fromOffset(80, 18),
                     BackgroundTransparency = 1, Text = tostring(value) .. suffix, ClearTextOnFocus = false,
-                    TextColor3 = Theme.SubText, Font = Fonts.Regular, TextSize = 13,
+                    TextColor3 = Theme.SubText, FontFace = Fonts.Regular, TextSize = 13,
                     TextXAlignment = Enum.TextXAlignment.Right, Parent = f,
                 })
 
@@ -1116,7 +1156,7 @@ function Library:CreateWindow(cfg)
                 local hexl = new("TextBox", {
                     AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -52, 0.5, 0), Size = UDim2.fromOffset(70, 18),
                     BackgroundTransparency = 1, Text = "", ClearTextOnFocus = false, TextColor3 = Theme.SubText,
-                    Font = Fonts.Regular, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, Parent = head,
+                    FontFace = Fonts.Regular, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, Parent = head,
                 })
 
                 local panel = new("Frame", {Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 0, PANEL), BackgroundTransparency = 1, Visible = false, Parent = f})
@@ -1253,7 +1293,7 @@ function Library:CreateWindow(cfg)
                     AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(130, 22),
                     BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Text = opt.Default or "",
                     PlaceholderText = opt.Placeholder or "...", PlaceholderColor3 = Theme.SubText,
-                    TextColor3 = Theme.Text, Font = Fonts.Regular, TextSize = 12, ClearTextOnFocus = false,
+                    TextColor3 = Theme.Text, FontFace = Fonts.Regular, TextSize = 12, ClearTextOnFocus = false,
                     ClipsDescendants = true, TextTruncate = Enum.TextTruncate.AtEnd, Parent = f,
                 })
                 corner(box, 3)
