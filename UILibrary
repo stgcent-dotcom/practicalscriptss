@@ -148,15 +148,14 @@ local function getParent()
     return Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local function makeLogo(parent, pos, size)
-    local badge = new("Frame", {Position = pos, Size = UDim2.fromOffset(size, size), BackgroundColor3 = Theme.Element, BorderSizePixel = 0, Parent = parent})
-    corner(badge, 5)
-    stroke(badge, Color3.fromRGB(72, 72, 88))
-    new("UIGradient", {Color = ColorSequence.new(Color3.fromRGB(38, 38, 46), Color3.fromRGB(22, 22, 28)), Rotation = 90, Parent = badge})
+-- big silver-gradient letter (no box); it stands in for the first letter of the title
+local function makeLogo(parent, pos, size, letter)
     local p = new("TextLabel", {
-        BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Text = "P", Font = Fonts.Bold,
-        TextSize = math.floor(size * 0.64), TextColor3 = Color3.new(1, 1, 1), Parent = badge,
+        BackgroundTransparency = 1, Position = pos, Size = UDim2.fromOffset(0, size), AutomaticSize = Enum.AutomaticSize.X,
+        Text = letter or "P", Font = Fonts.Bold, TextSize = size, TextColor3 = Color3.new(1, 1, 1),
+        TextYAlignment = Enum.TextYAlignment.Bottom, Parent = parent,
     })
+    p:SetAttribute("NoTheme", true)
     new("UIGradient", {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
@@ -165,7 +164,12 @@ local function makeLogo(parent, pos, size)
         }),
         Rotation = 60, Parent = p,
     })
-    return badge
+    return p
+end
+
+-- width of the logo letter, so the rest of the title can sit right after it
+local function letterWidth(letter, size)
+    return TextService:GetTextSize(letter, size, Fonts.Bold, Vector2.new(1000, 1000)).X
 end
 
 -- config value <-> JSON-safe value
@@ -493,15 +497,20 @@ function Library:CreateWindow(cfg)
     new("Frame", {Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, Parent = sidebar})
 
     local header = new("Frame", {Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1, Active = true, Parent = sidebar})
-    makeLogo(header, UDim2.fromOffset(14, 12), 28)
+    -- big "P" drop cap, then the rest of the first word ("ractical") with the second word under it
     local t1, t2 = string.match(title, "^(%S+)%s*(.*)$")
-    local ttl = label(header, t1 or title, 16, Theme.Text, Fonts.Bold)
-    ttl.Position = UDim2.fromOffset(50, 9)
-    ttl.Size = UDim2.new(1, -56, 0, 18)
+    t1 = t1 or title
+    local first = string.sub(t1, 1, 1)
+    local LOGO = 36
+    makeLogo(header, UDim2.fromOffset(14, 6), LOGO, first)
+    local x = 14 + letterWidth(first, LOGO) + 1
+    local ttl = label(header, string.sub(t1, 2), 16, Theme.Text, Fonts.Bold)
+    ttl.Position = UDim2.fromOffset(x, 11)
+    ttl.Size = UDim2.new(1, -(x + 6), 0, 18)
     if t2 and t2 ~= "" then
         local sub2 = label(header, string.upper(t2), 10, Theme.SubText, Fonts.Bold)
-        sub2.Position = UDim2.fromOffset(50, 26)
-        sub2.Size = UDim2.new(1, -56, 0, 12)
+        sub2.Position = UDim2.fromOffset(x, 28)
+        sub2.Size = UDim2.new(1, -(x + 6), 0, 12)
     end
 
     local tabList = new("ScrollingFrame", {
@@ -1746,8 +1755,13 @@ function Library:CreateWindow(cfg)
     -----------------------------------------------------------------
     local touchBtn
     if UIS.TouchEnabled then
-        touchBtn = makeLogo(gui, UDim2.new(0, 16, 0.5, -22), 44)
-        touchBtn.Visible = false
+        -- the tap target keeps a dark square so the P stays visible over bright games
+        touchBtn = new("Frame", {Position = UDim2.new(0, 16, 0.5, -22), Size = UDim2.fromOffset(44, 44), BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Visible = false, Parent = gui})
+        corner(touchBtn, 6)
+        stroke(touchBtn)
+        local tp = makeLogo(touchBtn, UDim2.fromScale(0.5, 0.5), 28, string.sub(title, 1, 1))
+        tp.AnchorPoint = Vector2.new(0.5, 0.5)
+        tp.TextYAlignment = Enum.TextYAlignment.Center
         -- transparent hit area on top of the logo so the label doesn't swallow touches
         local hit = new("TextButton", {Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5, Parent = touchBtn})
         hit.InputBegan:Connect(function(i)
@@ -1799,10 +1813,13 @@ function Library:CreateWindow(cfg)
     rescale()
     connect(gui:GetPropertyChangedSignal("AbsoluteSize"), rescale)
 
-    makeLogo(splash, UDim2.fromOffset(24, 20), 30)
-    local sTitle = label(splash, title, 24, Theme.Text, Fonts.Bold)
-    sTitle.Position = UDim2.fromOffset(64, 18)
-    sTitle.Size = UDim2.new(1, -76, 0, 34)
+    local splashFirst = string.sub(title, 1, 1)
+    makeLogo(splash, UDim2.fromOffset(24, 14), 36, splashFirst)
+    local sx = 24 + letterWidth(splashFirst, 36) + 1
+    local sTitle = label(splash, string.sub(title, 2), 24, Theme.Text, Fonts.Bold)
+    sTitle.TextYAlignment = Enum.TextYAlignment.Bottom
+    sTitle.Position = UDim2.fromOffset(sx, 14)
+    sTitle.Size = UDim2.new(1, -(sx + 12), 0, 33)
     local sSub = label(splash, cfg.Subtitle or "Loading...", 12, Theme.SubText, Fonts.Regular)
     if not cfg.Subtitle then
         -- game name needs a web request, so fetch it in the background and swap the text in
