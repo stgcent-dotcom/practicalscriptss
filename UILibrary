@@ -35,7 +35,7 @@ local Theme = {
 -- Text uses FontFace (Font objects) so custom fonts can be loaded.
 -- Coolvetica is downloaded once from the repo and loaded with getcustomasset;
 -- if the executor can't do that, Builder Sans is used instead.
-local DEFAULT_FONT_URL = "https://raw.githubusercontent.com/stgcent-dotcom/practicalscriptss/main/coolvetica.ttf"
+local DEFAULT_FONT_URL = "https://raw.githubusercontent.com/stgcent-dotcom/practicalscriptss/main/Coolvetica%20Rg.otf"
 local BUILDER = "rbxasset://fonts/families/BuilderSans.json"
 local Fonts = {
     Regular = Font.new(BUILDER, Enum.FontWeight.Regular),
