@@ -330,6 +330,23 @@ function Library:CreateWindow(cfg)
         updateBindRow(b)
         return b
     end
+    local function removeBind(b)
+        for idx, x in ipairs(binds) do
+            if x == b then
+                table.remove(binds, idx)
+                break
+            end
+        end
+        if b.Row then
+            b.Row:Destroy()
+            b.Row = nil
+        end
+        local any = false
+        for _, x in ipairs(binds) do
+            if x.Key ~= nil then any = true break end
+        end
+        kbEmpty.Visible = not any
+    end
     local function matches(i, key)
         return key ~= nil and (i.KeyCode == key or i.UserInputType == key)
     end
@@ -777,13 +794,26 @@ function Library:CreateWindow(cfg)
                 end
                 b.MouseButton1Click:Connect(fire)
 
+                local bind, api
                 if opt.Keybind ~= nil then
-                    local bind = newBind(typeof(opt.Keybind) == "EnumItem" and opt.Keybind or nil, fire, "Press", opt.Name or "Button")
-                    local chip, api = makeChip(f, bind)
+                    bind = newBind(typeof(opt.Keybind) == "EnumItem" and opt.Keybind or nil, fire, "Press", opt.Name or "Button")
+                    local chip
+                    chip, api = makeChip(f, bind, opt.KeybindChanged)
                     chip.Position = UDim2.new(1, -34, 0.5, 0)
                     if opt.Flag then register({Flag = opt.Flag .. "_Key"}, api, "Keybind") end
                 end
-                return {Fire = function() fire() end}
+
+                local obj = {}
+                function obj:Fire() fire() end
+                function obj:SetKey(k) if api then api:Set(k) end end
+                function obj:GetKey() return bind and bind.Key or nil end
+                -- removes the button, its keybind and its keybind-list row
+                function obj:Destroy()
+                    if bind then removeBind(bind) end
+                    if opt.Flag and Window.Flags[opt.Flag .. "_Key"] == api then Window.Flags[opt.Flag .. "_Key"] = nil end
+                    f:Destroy()
+                end
+                return obj
             end
 
             function Sub:Toggle(opt)
