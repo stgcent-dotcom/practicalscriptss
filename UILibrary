@@ -638,6 +638,9 @@ function Library:CreateWindow(cfg)
     Window:SetSidebarAutoHide(autoHide, true)
     new("Frame", {Position = UDim2.new(0, 0, 0, 37), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Stroke, BorderSizePixel = 0, ZIndex = 0, Parent = right})
     draggable(header, root)
+    -- the whole top bar (beside the sub-tabs) drags the window too
+    local topDrag = new("Frame", {Size = UDim2.new(1, -40, 0, 37), BackgroundTransparency = 1, Active = true, ZIndex = 0, Parent = right})
+    draggable(topDrag, root)
 
     -- hide button (top right)
     local hideBtn = new("TextButton", {
@@ -713,6 +716,8 @@ function Library:CreateWindow(cfg)
         })
         new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = subBar})
         pad(subBar, 10, 0, 4, 0)
+        -- the sub-tab strip sits on top of the drag area, so it needs to drag the window as well
+        draggable(subBar, root)
 
         local holder = new("Frame", {Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 1, -38), BackgroundTransparency = 1, ClipsDescendants = true, Visible = false, Parent = right})
 
